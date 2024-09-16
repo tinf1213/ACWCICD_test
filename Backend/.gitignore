@@ -1,0 +1,9 @@
+# Ignore all virtual environments
+LLM/
+__pycache__/
+
+# Ignore all embedded docs
+storage/
+
+# Ignore security credentials
+.env
