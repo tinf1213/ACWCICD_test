@@ -7,19 +7,43 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: selfhost  # Name of your self-hosted agent pool
 
 steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+  # Step 1: Install Node.js
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: 'Install Node.js'
 
-- script: |
-    cd Frontend
-  displayName: 'Navigate to Frontend directory'
-  
-- script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+  # Step 2: Install dependencies and build the application
+  - script: |
+      cd Frontend/
+      npm install
+      npm run build
+    displayName: 'npm install and build'
+
+  # Step 3: Publish build artifacts
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: 'Frontend/.output/public'  # Adjust the path to where your build output is located
+      artifactName: 'nuxt-build'
+      publishLocation: 'Container'
+    displayName: 'Publish build artifacts'
+
+  # Step 4: Download build artifacts
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      buildType: 'current'
+      artifactName: 'nuxt-build'
+      downloadPath: '$(Pipeline.Workspace)/nuxt-build'
+    displayName: 'Download build artifacts'
+
+  # Step 5: Deploy to Azure Web App
+  - task: AzureWebApp@1
+    inputs:
+      azureSubscription: 'toWebApp_of_t1nf_free_tier'  # Use the service connection you created
+      appType: 'webAppLinux'  # Use webAppLinux for a Linux Web App
+      appName: 'acw2024CICD'  # Replace with your Azure Web App name
+      package: '$(Pipeline.Workspace)/nuxt-build'  # Use the downloaded build artifacts
+    displayName: 'Deploy to Azure Web App'
